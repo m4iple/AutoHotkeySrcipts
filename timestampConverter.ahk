@@ -1,36 +1,71 @@
 #Requires AutoHotkey v2.0
 
-; GUI -> Text input, Button to copy unix, Button to copy human time
-; Formats a human time (YYYY-MM-DD HH:mm:ss) to unix time -> handle unexpected formats
-; Formats a unix time to human time (YYYY-MM-DD HH:mm:ss) -> handle unexpected formats
-; Copies the result to clipboard
+; GUI
+; Formats a human time (YYYY-MM-DD HH:mm:ss) to unix time
+; Formats a unix time to human time (YYYY-MM-DD HH:mm:ss)
+; Buttons copy the result to clipboard
+;
+; Testing if the local date to UTC function is needed
 
 !+t::ShowUi()  ; ALT+Shift+T
 
 ShowUi() {
+    humanTime := ""
+    unixTime := ""
+    inputTimer := 0
+
     ui := Gui("+AlwaysOnTop", "Timestamp Converter")
-    input := ui.Add("Edit", "w300 h30", "Enter date/time (YYYY-MM-DD HH:mm:ss or timestamp)")
-    unixButton := ui.Add("Button", "w150 h30", "Unix Timestamp")
-    humanButton := ui.Add("Button", "w150 h30", "Human Time")
+    ui.add("GroupBox", "w200 h44", "Input Time")
+    input := ui.Add("Edit", "x20 y20 w180", "")
+    unixButton := ui.Add("Button", "x9 y50 w100 h30", "Unix")
+    humanButton := ui.Add("Button", "x110 y50 w100 h30", "Human")
 
     ui.Show()
 
+    _ProcessInputHandler() {
+        results := HandleUserInput(input.Value)
+        unixTime := results.unix
+        humanTime := results.human
+        unixButton.Text := results.unix
+        humanButton.Text := results.human
+    }
 
+    _HandleInputChange(*) {
+        if (inputTimer) { 
+            SetTimer(inputTimer, 0) 
+        }
+        inputTimer := SetTimer(_ProcessInputHandler, -500)
+    }
+
+    input.OnEvent("Change", _HandleInputChange)
+    unixButton.OnEvent("Click", (*) => A_Clipboard := unixTime)
+    humanButton.OnEvent("Click", (*) => A_Clipboard := humanTime)
 }
-
 
 
 ; Handles user input
 HandleUserInput(input) {
-    ; input can be (YYYY-MM-DD HH:mm:ss) or a timestamp
-    ; check type -> check expected format
-    ; reforamt into both formats
-    ; populate the buttons with the results ? global variables for later easy access?
+    try {
+        if RegExMatch(input, "^\d+$") {
+            ahkTime := GetAhkTimeFromUnix(input)
+            humanTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
+            return {unix: input, human: humanTime}
+        }else if RegExMatch(input, "^\d{4}-\d{2}-\d{2}(\s\d{2}:\d{2}(:\d{2})?)?$") {
+            ahkTime := GetAhkTimeFromHuman(input)
+            unixTime := GetUnixTimefromAhk(ahkTime)
+            return {unix: unixTime, human: input}
+        } else {
+            return {unix: "Invalid", human: "Invalid"}
+        }
+    } catch Error as e {
+        return {unix: "Invalid", human: "Invalid"}
+    }
 }
 
 ; Formant a AhK to an Unix Timestamp
 GetUnixTimefromAhk(date) {
-    utcDate  := DateToUTC(date)
+    ; utcDate  := DateToUTC(date)
+    utcDate := date
     epoch := "19700101000000"
     unixTime := DateDiff(utcDate, epoch, "Seconds")
     return unixTime
@@ -41,6 +76,19 @@ GetAhkTimeFromUnix(unixTime) {
     epoc := "19700101000000"
     akkTime := DateAdd(epoc, unixTime, "Seconds")
     return akkTime
+}
+
+; Formant Human Time to AHK (YYYYMMDDHH24MISS)
+GetAhkTimeFromHuman(human) {
+   if REGEXMatch(human, "(\d{4})-(\d{2})-(\d{2})(\s(\d{2}):(\d{2})(:(\d{2}))?)?", &match) {
+        year := match[1]
+        month := match[2]
+        day := match[3]
+        hour := match[5] ? match[5] : "00"
+        minutes := match[6] ? match[6] : "00"
+        seconds := match[8] ? match[8] : "00"
+        return year . month . day . hour . minutes . seconds
+    }
 }
 
 ; Convert local time to UTC considering DST for specific date (AI code)
