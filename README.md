@@ -12,3 +12,5 @@ A GUI tool for selecting dates and times, offering multiple [Discord timestamp](
 An autoclicker with variable click rate.
 
 **Keys:** p (Start), l (Stop), o (+10 ms), i (-10 ms)
+
+### timestampConverter (in progress)
