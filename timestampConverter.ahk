@@ -73,9 +73,13 @@ GetUnixTimefromAhk(date) {
 
 ; Format Unix Timestamp to AHK (YYYYMMDDHH24MISS)
 GetAhkTimeFromUnix(unixTime) {
+    if (StrLen(unixTime) = 13) {
+        unixTime := unixTime / 1000
+    }
+    
     epoc := "19700101000000"
-    akkTime := DateAdd(epoc, unixTime, "Seconds")
-    return akkTime
+    ahkTime := DateAdd(epoc, unixTime, "Seconds")
+    return ahkTime
 }
 
 ; Formant Human Time to AHK (YYYYMMDDHH24MISS)
