@@ -10,32 +10,24 @@
 !+t::ShowUi()  ; ALT+Shift+T
 
 ShowUi() {
-    utcTime := ""
-    localTime := ""
+    humanTime := ""
     unixTime := ""
     inputTimer := 0
 
     ui := Gui("+AlwaysOnTop", "Timestamp Converter")
     ui.add("GroupBox", "w200 h44", "Input Time")
     input := ui.Add("Edit", "x20 y20 w180", "")
-    utcToggle := ui.Add("CheckBox", "x165 y1 w40 h20", "UTC")
-    ui.add("GroupBox", "w200 h44 x9", "Timestamp")
-    unixButton := ui.Add("Button", "x20 y70 w180 h20", "Timestamp")
-    ui.add("GroupBox", "w200 h44 x9", "UTC")
-    utcButton := ui.Add("Button", "x20 y120 w180 h20", "UTC")
-    ui.add("GroupBox", "w200 h44 x9", "Local")
-    localButton := ui.Add("Button", "x20 y170 w180 h20", "Local")
+    unixButton := ui.Add("Button", "x9 y50 w100 h30", "Unix")
+    humanButton := ui.Add("Button", "x110 y50 w100 h30", "Human")
 
     ui.Show()
 
     _ProcessInputHandler() {
-        results := HandleUserInput(input.Value, utcToggle.Value)
+        results := HandleUserInput(input.Value)
         unixTime := results.unix
-        utcTime := results.utc
-        localTime := results.local
+        humanTime := results.human
         unixButton.Text := results.unix
-        utcButton.Text := results.utc
-        localButton.Text := results.local
+        humanButton.Text := results.human
     }
 
     _HandleInputChange(*) {
@@ -45,47 +37,28 @@ ShowUi() {
         inputTimer := SetTimer(_ProcessInputHandler, -500)
     }
 
-    _handleToggleChange(*) {
-        _ProcessInputHandler()
-    }
-
     input.OnEvent("Change", _HandleInputChange)
-    utcToggle.OnEvent("Click", _handleToggleChange)
     unixButton.OnEvent("Click", (*) => A_Clipboard := unixTime)
-    utcButton.OnEvent("Click", (*) => A_Clipboard := utcTime)
-    localButton.OnEvent("Click", (*) => A_Clipboard := localTime)
+    humanButton.OnEvent("Click", (*) => A_Clipboard := humanTime)
 }
 
 
 ; Handles user input
-HandleUserInput(input, isUtc := false) {
-    if (input = "") {
-        return {unix: "Timestamp", utc: "UTC", local: "Local"}
-    }
+HandleUserInput(input) {
     try {
         if RegExMatch(input, "^\d+$") {
             ahkTime := GetAhkTimeFromUnix(input)
-            utcTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
-            localTime := FormatTime(UTCToLocal(ahkTime), "yyyy-MM-dd HH:mm:ss")
-            return {unix: input, utc: utcTime, local: localTime}
+            humanTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
+            return {unix: input, human: humanTime}
         }else if RegExMatch(input, "^\d{4}-\d{2}-\d{2}(\s\d{2}:\d{2}(:\d{2})?)?$") {
             ahkTime := GetAhkTimeFromHuman(input)
-            if(isUtc) {
-                unixTime := GetUnixTimefromAhk(ahkTime)
-                utcTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
-                localTime := FormatTime(UTCToLocal(ahkTime), "yyyy-MM-dd HH:mm:ss")
-            } else {
-                utcAhk := LocalToUTC(ahkTime)
-                unixTime := GetUnixTimefromAhk(ahkTime)
-                utcTime := FormatTime(utcAhk, "yyyy-MM-dd HH:mm:ss")
-                localTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
-            }
-            return {unix: unixTime, utc: utcTime, local: localTime}
+            unixTime := GetUnixTimefromAhk(ahkTime)
+            return {unix: unixTime, human: input}
         } else {
-            return {unix: "Invalid", utc: "Invalid", local: "Invalid"}
+            return {unix: "Invalid", human: "Invalid"}
         }
     } catch Error as e {
-        return {unix: "Invalid", utc: "Invalid", local: "Invalid"} 
+        return {unix: "Invalid", human: "Invalid"}
     }
 }
 
@@ -100,13 +73,9 @@ GetUnixTimefromAhk(date) {
 
 ; Format Unix Timestamp to AHK (YYYYMMDDHH24MISS)
 GetAhkTimeFromUnix(unixTime) {
-    if (StrLen(unixTime) = 13) {
-        unixTime := unixTime / 1000
-    }
-    
     epoc := "19700101000000"
-    ahkTime := DateAdd(epoc, unixTime, "Seconds")
-    return ahkTime
+    akkTime := DateAdd(epoc, unixTime, "Seconds")
+    return akkTime
 }
 
 ; Formant Human Time to AHK (YYYYMMDDHH24MISS)
@@ -123,7 +92,7 @@ GetAhkTimeFromHuman(human) {
 }
 
 ; Convert local time to UTC considering DST for specific date (AI code)
-LocalToUTC(localTime) {
+DateToUTC(localTime) {
     ; Create SYSTEMTIME structures for local and UTC time
     localST := Buffer(16, 0)
     utcST := Buffer(16, 0)
@@ -153,32 +122,4 @@ LocalToUTC(localTime) {
     utcTimeStr := utcYear . utcMonth . utcDay . utcHour . utcMinute . utcSecond
 
     return utcTimeStr
-}
-
-; Convert UTC time to Local considering DST for specific date
-UTCToLocal(utcTime) {
-    utcST := Buffer(16, 0)
-    localST := Buffer(16, 0)
-
-    NumPut("UShort", SubStr(utcTime, 1, 4), utcST, 0)   ; year
-    NumPut("UShort", SubStr(utcTime, 5, 2), utcST, 2)   ; month
-    NumPut("UShort", 0, utcST, 4)                       ; wDayOfWeek (ignored)
-    NumPut("UShort", SubStr(utcTime, 7, 2), utcST, 6)   ; day
-    NumPut("UShort", SubStr(utcTime, 9, 2), utcST, 8)   ; hour
-    NumPut("UShort", SubStr(utcTime, 11, 2), utcST, 10) ; minute
-    NumPut("UShort", SubStr(utcTime, 13, 2), utcST, 12) ; second
-    NumPut("UShort", 0, utcST, 14)                      ; milliseconds
-
-    DllCall("kernel32\SystemTimeToTzSpecificLocalTime", "Ptr", 0, "Ptr", utcST, "Ptr", localST)
-
-    localYear := Format("{:04}", NumGet(localST, 0, "UShort"))
-    localMonth := Format("{:02}", NumGet(localST, 2, "UShort"))
-    localDay := Format("{:02}", NumGet(localST, 6, "UShort"))
-    localHour := Format("{:02}", NumGet(localST, 8, "UShort"))
-    localMinute := Format("{:02}", NumGet(localST, 10, "UShort"))
-    localSecond := Format("{:02}", NumGet(localST, 12, "UShour"))
-
-    localTimeStr := localYear . localMonth . localDay . localHour . localMinute . localSecond
-
-    return localTimeStr
 }
