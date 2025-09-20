@@ -10,14 +10,20 @@ A GUI tool for selecting dates and times, offering multiple [Discord timestamp](
 
 **Aktivation keys:**  ALT+Shift+D
 
-### autoClicker.ahk (is geting a rework)
+### autoClicker.ahk
 
 An autoclicker with variable click rate.
 
-**Keys:** p (Start), l (Stop), o (+10 ms), i (-10 ms)
+**Aktivation keys:**  ALT+Shift+A
 
 ### timestampConverter
 
 A GUI tool for converting Human to Unix Time and back
 
 **Aktivation keys:** ALT+SHIFT+T
+
+### reminder
+
+Set an end time and intervall, till the end is hit MessageBoxes pop up when the intervall is hit.
+
+**Aktivation keys:** ALT+SHIFT+R
