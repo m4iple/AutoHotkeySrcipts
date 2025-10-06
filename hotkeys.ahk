@@ -5,3 +5,6 @@
 
 ; Windows + B = open browser
 #b::Run("chrome.exe")
+
+; Windows + F = open file Explorer
+#f::Run("explorer.exe")
