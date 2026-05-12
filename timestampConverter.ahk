@@ -76,7 +76,7 @@ HandleUserInput(input, isUtc := false) {
                 localTime := FormatTime(UTCToLocal(ahkTime), "yyyy-MM-dd HH:mm:ss")
             } else {
                 utcAhk := LocalToUTC(ahkTime)
-                unixTime := GetUnixTimefromAhk(ahkTime)
+                unixTime := GetUnixTimefromAhk(utcTime)
                 utcTime := FormatTime(utcAhk, "yyyy-MM-dd HH:mm:ss")
                 localTime := FormatTime(ahkTime, "yyyy-MM-dd HH:mm:ss")
             }
@@ -176,7 +176,7 @@ UTCToLocal(utcTime) {
     localDay := Format("{:02}", NumGet(localST, 6, "UShort"))
     localHour := Format("{:02}", NumGet(localST, 8, "UShort"))
     localMinute := Format("{:02}", NumGet(localST, 10, "UShort"))
-    localSecond := Format("{:02}", NumGet(localST, 12, "UShour"))
+    localSecond := Format("{:02}", NumGet(localST, 12, "UShort"))
 
     localTimeStr := localYear . localMonth . localDay . localHour . localMinute . localSecond
 
